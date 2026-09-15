@@ -1,0 +1,12 @@
+{
+  "name": "simple-map-marker-controls",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "fmt",
+    "rapidcsv",
+    "spdlog",
+    "xbyak",
+    "directxmath",
+    "directxtk"
+  ]
+}
