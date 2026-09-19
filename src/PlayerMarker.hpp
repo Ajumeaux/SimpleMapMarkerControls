@@ -6,6 +6,19 @@
 
 namespace PlayerMarker
 {
+    inline constexpr std::uint32_t kPlayerSetMarkerType = 2;
+
+    inline bool IsPlayerSetMarker(const RE::MapMenuMarker& marker)
+    {
+        return marker.type == kPlayerSetMarkerType && marker.fullName == nullptr && marker.form == nullptr;
+    }
+
+    inline bool Exists()
+    {
+        auto* player = RE::PlayerCharacter::GetSingleton();
+        return player && static_cast<bool>(player->GetInfoRuntimeData().playerMapMarker);
+    }
+
     namespace detail
     {
         inline constexpr REL::ID kClearPlayerMarkerID{ 40536 };
@@ -32,8 +45,6 @@ namespace PlayerMarker
 
         detail::ClearPlayerMarker(state);
         *detail::CurrentPosition = *detail::DefaultPosition;
-
-        SKSE::log::info("PlayerMarker::Remove: player marker removed");
 
         return true;
     }

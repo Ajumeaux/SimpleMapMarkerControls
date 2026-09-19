@@ -2,24 +2,24 @@
 
 #include <spdlog/sinks/basic_file_sink.h>
 
-#include "MapClickHook.hpp"
-#include "MenuEventHandler.hpp"
+#include "LocalMapUpgradeCompat.hpp"
+#include "WorldMapClickHook.hpp"
 
 namespace logger = SKSE::log;
 
-static void setup_logging()
+static void SetupLogging()
 {
-    auto log_directory = logger::log_directory();
+    auto logDirectory = logger::log_directory();
 
-    if (!log_directory) {
+    if (!logDirectory) {
         SKSE::stl::report_and_fail("Failed to find SKSE log directory.");
     }
 
-    const auto plugin_name = SKSE::PluginDeclaration::GetSingleton()->GetName();
+    const auto pluginName = SKSE::PluginDeclaration::GetSingleton()->GetName();
 
-    *log_directory /= std::format("{}.log", plugin_name);
+    *logDirectory /= std::format("{}.log", pluginName);
 
-    auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(log_directory->string(), true);
+    auto sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(logDirectory->string(), true);
     auto log = std::make_shared<spdlog::logger>("global", std::move(sink));
 
     log->set_level(spdlog::level::trace);
@@ -28,22 +28,30 @@ static void setup_logging()
     spdlog::set_default_logger(std::move(log));
 }
 
+static void OnSKSEMessage(SKSE::MessagingInterface::Message* message)
+{
+    if (!message || message->type != SKSE::MessagingInterface::kPostLoad) {
+        return;
+    }
+
+    if (GetModuleHandleW(L"LocalMapUpgrade.dll")) {
+        LocalMapUpgradeCompat::Install();
+        logger::info("Local Map Upgrade detected. Compatibility enabled.");
+    } else {
+        logger::info("Local Map Upgrade not detected. Local Map compatibility disabled.");
+    }
+}
+
 SKSEPluginLoad(const SKSE::LoadInterface* skse)
 {
     SKSE::Init(skse);
 
-    setup_logging();
+    SetupLogging();
 
     logger::info("Simple Map Marker Controls loaded successfully.");
 
-    if (auto* ui = RE::UI::GetSingleton()) {
-        ui->AddEventSink(MenuEventHandler::GetSingleton());
-        logger::info("Registered MenuOpenCloseEvent listener.");
-    } else {
-        logger::error("UI singleton is null.");
-    }
-
-    MapClickHook::Install();
+    WorldMapClickHook::Install();
+    SKSE::GetMessagingInterface()->RegisterListener(OnSKSEMessage);
 
     return true;
 }

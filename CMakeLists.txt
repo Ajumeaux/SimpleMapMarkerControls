@@ -8,7 +8,6 @@ project(SimpleMapMarkerControls
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# We don't need CommonLibSSE-NG's own tests.
 set(BUILD_TESTS OFF CACHE BOOL "Build CommonLibSSE-NG tests" FORCE)
 
 add_subdirectory(external/CommonLibSSE-NG)
