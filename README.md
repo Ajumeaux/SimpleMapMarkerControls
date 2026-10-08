@@ -19,7 +19,7 @@ Vanilla Skyrim does not support custom player markers on the Local Map.
 
 If [Local Map Upgrade](https://www.nexusmods.com/skyrimspecialedition/mods/129756) is installed, the same controls are enabled for its Local Map marker support.
 
-Source:
+Source:  
 [alexsylex/LocalMapUpgrade](https://github.com/alexsylex/LocalMapUpgrade)
 
 Without Local Map Upgrade, the vanilla Local Map is left unchanged.
@@ -33,6 +33,14 @@ Tested on:
 
 Local Map integration depends on the Skyrim versions supported by Local Map Upgrade.
 
-Built with CommonLibSSE-NG and Address Library.
+Built with [CommonLibSSE-NG](https://github.com/alandtse/CommonLibSSE-NG) and Address Library.
+
+## License
+
+Copyright (C) 2026 Ajumeaux
 
 Licensed under GPL-3.0-or-later.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY.
+
+See the [LICENSE](LICENSE) file for the full license text.
