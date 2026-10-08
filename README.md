@@ -34,3 +34,5 @@ Tested on:
 Local Map integration depends on the Skyrim versions supported by Local Map Upgrade.
 
 Built with CommonLibSSE-NG and Address Library.
+
+Licensed under GPL-3.0-or-later.
