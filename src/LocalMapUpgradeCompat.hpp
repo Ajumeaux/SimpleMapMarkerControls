@@ -38,15 +38,38 @@ private:
 
     inline static REL::Relocation<ProcessButton_t> _originalProcessButton;
 
+
+
+    static bool CallLMUAsClick(RE::LocalMapMenu::InputHandler* handler, RE::ButtonEvent* event)
+    {
+        const auto* userEvents = RE::UserEvents::GetSingleton();
+
+        if (!userEvents) {
+            return _originalProcessButton(handler, event);
+        }
+
+        const RE::BSFixedString originalUserEvent = event->GetUserEvent();
+
+        event->SetUserEvent(userEvents->click);
+        const bool result = _originalProcessButton(handler, event);
+        event->SetUserEvent(originalUserEvent);
+
+        return result;
+    }
+
     static bool ProcessButton(RE::LocalMapMenu::InputHandler* handler, RE::ButtonEvent* event)
     {
         if (!handler || !event) {
             return _originalProcessButton(handler, event);
         }
 
-        const bool isLeftClick = event->device.get() == RE::INPUT_DEVICE::kMouse && event->GetIDCode() == 0;
+        const auto* userEvents = RE::UserEvents::GetSingleton();
 
-        if (!isLeftClick) {
+        const bool isLeftClick = event->device.get() == RE::INPUT_DEVICE::kMouse && event->GetIDCode() == 0;
+        const bool isClick = userEvents && event->GetUserEvent() == userEvents->click;
+        const bool isPlacePlayerMarker = userEvents && event->GetUserEvent() == userEvents->placePlayerMarker;
+
+        if (!isLeftClick && !isClick && !isPlacePlayerMarker) {
             return _originalProcessButton(handler, event);
         }
 
@@ -58,7 +81,15 @@ private:
 
         auto& runtime = localMap->GetRuntimeData();
 
-        if (!runtime.showingMap || !event->IsDown()) {
+        if (!runtime.showingMap) {
+            return _originalProcessButton(handler, event);
+        }
+
+        if (isPlacePlayerMarker && !event->IsDown()) {
+            return CallLMUAsClick(handler, event);
+        }
+
+        if (!event->IsDown()) {
             return _originalProcessButton(handler, event);
         }
 
@@ -72,10 +103,10 @@ private:
         if (clickedPlayerMarker && PlayerMarker::Exists()) {
             if (!PlayerMarker::Remove()) {
                 logger::warn("LocalMapUpgrade: failed to remove PlayerSetMarker");
-                return _originalProcessButton(handler, event);
+                return isPlacePlayerMarker ? CallLMUAsClick(handler, event) : _originalProcessButton(handler, event);
             }
 
-            const bool result = _originalProcessButton(handler, event);
+            const bool result = isPlacePlayerMarker ? CallLMUAsClick(handler, event) : _originalProcessButton(handler, event);
 
             if (PlayerMarker::Exists() && !PlayerMarker::Remove()) {
                 logger::warn("LocalMapUpgrade: failed to remove temporary replacement PlayerSetMarker");
@@ -90,7 +121,7 @@ private:
             }
         }
 
-        return _originalProcessButton(handler, event);
+        return isPlacePlayerMarker ? CallLMUAsClick(handler, event) : _originalProcessButton(handler, event);
     }
 };
 
