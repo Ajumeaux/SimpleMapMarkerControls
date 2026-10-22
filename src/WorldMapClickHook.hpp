@@ -54,6 +54,40 @@ private:
         return false;
     }
 
+    static bool IsNonTravelableLocationMarker(const RE::MapMenuMarker& marker)
+    {
+        if (!marker.ref) {
+            return false;
+        }
+
+        const auto refr = RE::TESObjectREFR::LookupByHandle(marker.ref);
+
+        if (!refr) {
+            return false;
+        }
+
+        const auto* extraMapMarker = refr->extraList.GetByType<RE::ExtraMapMarker>();
+
+        if (!extraMapMarker || !extraMapMarker->mapData) {
+            return false;
+        }
+
+        return !extraMapMarker->mapData->flags.any(RE::MapMarkerData::Flag::kCanTravelTo);
+    }
+
+    static bool PlaceOrMoveAtCursor(RE::MapMenu::RUNTIME_DATA2* runtime, const RE::FxDelegateArgs& args)
+    {
+        if (HasPlayerSetMarker(runtime->mapMarkers) && !PlayerMarker::Remove()) {
+            logger::warn("WorldMap: failed to remove existing PlayerSetMarker before move");
+            return false;
+        }
+
+        runtime->selectedMarker = -1;
+        CallOriginal(args);
+
+        return true;
+    }
+
     class ProcessorProxy final : public CallbackProcessor
     {
     public:
@@ -81,17 +115,13 @@ private:
         _originalAccept(mapMenu, &proxy);
     }
 
-    static void HandleWorldMapClick(std::int32_t selectedIndex, const RE::BSTArray<RE::MapMenuMarker>& markers, const RE::FxDelegateArgs& args)
+    static void HandleWorldMapClick(RE::MapMenu::RUNTIME_DATA2* runtime, const RE::FxDelegateArgs& args)
     {
-        if (selectedIndex < 0) {
-            if (HasPlayerSetMarker(markers)) {
-                if (!PlayerMarker::Remove()) {
-                    logger::warn("WorldMap: failed to remove existing PlayerSetMarker before move");
-                    return;
-                }
-            }
+        const auto selectedIndex = runtime->selectedMarker;
+        auto& markers = runtime->mapMarkers;
 
-            CallOriginal(args);
+        if (selectedIndex < 0) {
+            PlaceOrMoveAtCursor(runtime, args);
             return;
         }
 
@@ -105,6 +135,11 @@ private:
 
         if (PlayerMarker::IsPlayerSetMarker(marker)) {
             PlayerMarker::Remove();
+            return;
+        }
+
+        if (IsNonTravelableLocationMarker(marker)) {
+            PlaceOrMoveAtCursor(runtime, args);
             return;
         }
 
@@ -139,14 +174,14 @@ private:
             return;
         }
 
-        const auto* worldRuntime = menu->GetRuntimeData2();
+        auto* worldRuntime = menu->GetRuntimeData2();
 
         if (!worldRuntime) {
             CallOriginal(args);
             return;
         }
 
-        HandleWorldMapClick(worldRuntime->selectedMarker, worldRuntime->mapMarkers, args);
+        HandleWorldMapClick(worldRuntime, args);
     }
 
     static void CallOriginal(const RE::FxDelegateArgs& args)
